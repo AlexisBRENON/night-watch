@@ -1,0 +1,30 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="css/pico.c3.min.css.gz">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><strong>NightWatch</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/shutdown"><button class="contrast">Logout</button></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <form action="/api/v1/configurations/default" method="post">
+            <label for="textarea-configuration">Configuration</label>
+            <textarea name="textarea-configuration" aria-label="JSON Configuration">
+                {:config}
+            </textarea>
+            <button type="submit" class="btn-success btn" name="button-submit" access="false"
+                id="button-submit">Submit</button>
+        </form>
+    </main>
+</body>
+
+</html>

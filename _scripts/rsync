@@ -1,0 +1,11 @@
+#! /usr/bin/env sh
+
+set -eux
+
+project_dir="$(realpath "$(dirname "$0")/..")"
+
+(
+    cd "$project_dir/device" && \
+    find . -type f ! -path '*/.frozen/*' -print0 | \
+    xargs -0 -I{} "${project_dir}/ext/micropython/tools/pyboard.py" -f cp {} :
+)
