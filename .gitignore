@@ -1,3 +1,4 @@
 device/configuration/
 device/.frozen/
 ext/
+/typings

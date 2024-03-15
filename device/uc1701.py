@@ -1,4 +1,4 @@
-# MicroPython UC1701 LCD driver, I2C and SPI interfaces
+# MicroPython UC1701 LCD driver, SPI interfaces
 
 from micropython import const
 import machine
@@ -32,23 +32,19 @@ SET_BOOSTER_RATIO_1 = const(0xF8)
 SET_BOOSTER_RATIO_2 = const(0x00)
 SET_POWER_SAVE = const(0x00)
 SET_ADV_PROGRAM_CONTROL_0_CMD = const(0xFA) # 0b1111 1010
-SET_ADV_PROGRAM_CONTROL_0_VALUE = const(0x00) # 0b#0## 00##
-SET_ADV_PROGRAM_CONTROL_0_VALUE_LSHIFT_TC = const(7)
-SET_ADV_PROGRAM_CONTROL_0_VALUE_LSHIFT_FR = const(4)
-SET_ADV_PROGRAM_CONTROL_0_VALUE_LSHIFT_WA = const(0)
+SET_ADV_PROGRAM_CONTROL_0_VALUE = const(0x00)  # 0b#0## 00##
 
-SPECIFICATION_POWER_UP_SEQUENCE = (
-    SET_SEG_DIRECTION | 0x0,
-    SET_COM_DIRECTION | 0x0,
-    SET_VLCD_RESISTOR_RATIO | 0b011,
-    SET_LCD_BIAS_RATIO | 0x0,
-    SET_ELECTRONIC_VOLUME_CMD,
-    SET_ELECTRONIC_VOLUME_VALUE | 55,
-    SET_POWER_CONTROL | 0b111,
-    SET_DISPLAY_ENABLE | 0x1,
-)
 
-_NULL_PIN = lambda x: x
+class _NullPin(machine.Pin):
+    def __init__(self, *argv, **kwargs) -> None:
+        pass
+
+    def init(self, *argv, **kwargs) -> None:
+        pass
+
+
+_NULL_PIN = _NullPin()
+
 
 # Subclassing FrameBuffer provides support for graphics primitives
 # http://docs.micropython.org/en/latest/pyboard/library/framebuf.html
@@ -79,11 +75,11 @@ class UC1701(framebuf.FrameBuffer):
 
     async def power_down(self):
         await self.write_cmd(SYSTEM_RESET)
-        await asyncio.sleep_ms(5)
+        await asyncio.sleep(0.005)
         self.rst(0)
-        await asyncio.sleep_ms(1)
+        await asyncio.sleep(0.001)
         self.rst(1)
-        await asyncio.sleep_ms(5)
+        await asyncio.sleep(0.005)
 
     async def sleep(self):
         await self.write_cmd(SET_DISPLAY_ENABLE | 0x0)
@@ -127,6 +123,7 @@ class UC1701(framebuf.FrameBuffer):
             if isinstance(level, int):
                 level = level / 255
             pm = int(level * 0b111111)
+        assert pm is not None
         await self.write_cmd(SET_ELECTRONIC_VOLUME_CMD)
         await self.write_cmd(SET_ELECTRONIC_VOLUME_VALUE | (0b111111 & pm))
 
@@ -135,11 +132,13 @@ class UC1701_SPI(UC1701):
         self.rate = 10 * 1024 * 1024
         self.spi = spi
         self.dc = cd
+        self.dc.init(machine.Pin.OUT, value=0)
         self.cs = cs0
+        self.cs.init(machine.Pin.OUT, value=0)
         super().__init__(**kwargs)
 
     async def write_cmd(self, cmd):
-        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        self.spi.init(baudrate=self.rate, polarity=0, phase=0)  # type: ignore
         self.cs(1)
         self.dc(0)
         self.cs(0)
@@ -147,7 +146,7 @@ class UC1701_SPI(UC1701):
         self.cs(1)
 
     async def write_data(self, buf):
-        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        self.spi.init(baudrate=self.rate, polarity=0, phase=0)  # type: ignore
         self.cs(1)
         self.dc(1)
         self.cs(0)
