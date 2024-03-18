@@ -1,7 +1,11 @@
 import asyncio
+import c3pico
+import time
+
+import ntptime
 
 import click
-import c3pico
+import wlan
 
 click_handler = click.Click(c3pico.button)
 
@@ -25,3 +29,8 @@ while True:
         break
 
 print("Done")
+
+net_connection = asyncio.run(wlan.get_instance())
+if net_connection.config("ssid") != wlan.AP_SSID:
+    ntptime.settime(timezone=0, server="fr.pool.ntp.org")
+    print("UTC time after synchronization: %s" % str(time.localtime()))

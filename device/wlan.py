@@ -1,12 +1,14 @@
+import micropython
 import asyncio
-from config import Configuration
-
 import network
 
+from config import Configuration
 
 _WLAN_IS_CONNECTED = asyncio.Event()
 _WLAN = None
 
+AP_SSID = micropython.const("NightWatch")
+AP_PASS = micropython.const("123456789")
 
 async def get_instance():
     global _WLAN
@@ -30,7 +32,7 @@ async def get_instance():
             print("Setting up access point...")
             _WLAN = network.WLAN(network.AP_IF)
             _WLAN.active(True)
-            _WLAN.config(essid="NightWatch", password="123456789")
+            _WLAN.config(essid=AP_SSID, password=AP_PASS)
 
             print("Waiting access point active state...")
             while not _WLAN.active():
