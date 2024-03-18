@@ -1,16 +1,11 @@
 import asyncio
-import time
-import socket
-import select
-
-import c3pico
 from config import Configuration
 
 import network
 
 
 async def wlan():
-    config = Configuration()
+    config = Configuration.load()
 
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
