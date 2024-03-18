@@ -4,32 +4,43 @@ from config import Configuration
 import network
 
 
-async def wlan():
-    config = Configuration.load()
+_WLAN_IS_CONNECTED = asyncio.Event()
+_WLAN = None
 
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    access_point_ssids = {str(ap[0]) for ap in wlan.scan()}
-    for net in config.networks:
-        if net.ssid in access_point_ssids:
-            print(f"Connecting to known network {net.ssid}...")
-            wlan.connect(net.ssid, net.key)
-            while wlan.isconnected() == False:
+
+async def get_instance():
+    global _WLAN
+    if _WLAN is None:
+        config = Configuration.load()
+
+        _WLAN = network.WLAN(network.STA_IF)
+        _WLAN.active(True)
+        access_point_ssids = {str(ap[0]) for ap in _WLAN.scan()}
+        for net in config.networks:
+            if net.ssid in access_point_ssids:
+                print(f"Connecting to known network {net.ssid}...")
+                _WLAN.connect(net.ssid, net.key)
+                while not _WLAN.isconnected():
+                    await asyncio.sleep(1)
+                break
+
+        if not _WLAN.isconnected():
+            _WLAN.active(False)
+            del _WLAN
+            print("Setting up access point...")
+            _WLAN = network.WLAN(network.AP_IF)
+            _WLAN.active(True)
+            _WLAN.config(essid="NightWatch", password="123456789")
+
+            print("Waiting access point active state...")
+            while not _WLAN.active():
                 await asyncio.sleep(1)
-            break
 
-    if not wlan.isconnected():
-        wlan.active(False)
-        del wlan
-        print("Setting up access point...")
-        wlan = network.WLAN(network.AP_IF)
-        wlan.active(True)
-        wlan.config(essid="NightWatch", password="123456789")
+        print(f"Status: {_WLAN.status()}")
+        print(_WLAN.ifconfig())
+        _WLAN_IS_CONNECTED.set()
+    return _WLAN
 
-        print("Waiting access point active state...")
-        while not wlan.active():
-            await asyncio.sleep(1)
 
-    print(f"Status: {wlan.status()}")
-    print(wlan.ifconfig())
-    return wlan
+async def wait_for_connection():
+    await _WLAN_IS_CONNECTED.wait()
