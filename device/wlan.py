@@ -17,8 +17,10 @@ async def get_instance():
 
         _WLAN = network.WLAN(network.STA_IF)
         _WLAN.active(True)
-        access_point_ssids = {str(ap[0]) for ap in _WLAN.scan()}
+        print("Scanning surrounding networks...")
+        access_point_ssids = {bytes(ap[0]).decode() for ap in _WLAN.scan()}
         for net in config.networks:
+            print(f"Trying to connect to {net}")
             if net.ssid in access_point_ssids:
                 print(f"Connecting to known network {net.ssid}...")
                 _WLAN.connect(net.ssid, net.key)
